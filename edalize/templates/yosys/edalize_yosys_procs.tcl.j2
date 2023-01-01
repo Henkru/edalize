@@ -27,7 +27,9 @@ proc set_params {} {
 }
 
 proc synth {top} {
+{% if synth_command -%}
 {{ synth_command }} {{ synth_options }} -top $top
+{% endif %}
 }
 
 set top {{ top }}
