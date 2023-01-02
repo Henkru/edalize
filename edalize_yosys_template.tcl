@@ -4,9 +4,7 @@ load_plugins
 yosys -import
 
 verilog_defaults -push
-{% if write_command != "write_cxxrtl" %}
 verilog_defaults -add -defer
-{% endif %}
 
 set_defines
 set_incdirs
@@ -17,4 +15,4 @@ verilog_defaults -pop
 
 synth $top
 
-{{ write_command }} {{ output_opts }} {{ output_name }}
+write_cxxrtl test_cxxrtl_cxxrtl_0.cpp

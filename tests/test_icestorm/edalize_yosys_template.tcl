@@ -15,4 +15,4 @@ verilog_defaults -pop
 
 synth $top
 
-write_json $name.json
+write_json  $name.json

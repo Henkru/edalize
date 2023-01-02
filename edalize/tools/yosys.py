@@ -24,6 +24,10 @@ class Yosys(Edatool):
             "type": "str",
             "desc": "Output file format. Legal values are *json*, *edif*, *blif*",
         },
+        "output_name": {
+            "type": "str",
+            "desc": "Output file name. [Optional]",
+        },
         "yosys_template": {
             "type": "str",
             "desc": "TCL template file to use instead of default template",
@@ -35,6 +39,11 @@ class Yosys(Edatool):
         "yosys_synth_options": {
             "type": "str",
             "desc": "Additional options for the synth command",
+            "list": True,
+        },
+        "yosys_write_options": {
+            "type": "str",
+            "desc": "Additional options for the write command",
             "list": True,
         },
     }
@@ -73,7 +82,11 @@ class Yosys(Edatool):
         self.edam["files"] = unused_files
 
         output_format = self.tool_options.get("output_format", "blif")
-        default_target = f"{self.name}.{output_format}"
+        output_name_is_set = "output_name" in self.tool_options
+        output_name = self.tool_options.get("output_name", f"$name.{output_format}")
+        default_target = (
+            output_name if output_name_is_set else f"{self.name}.{output_format}"
+        )
 
         self.edam["files"].append(
             {
@@ -100,11 +113,18 @@ class Yosys(Edatool):
         arch = self.tool_options.get("arch")
 
         if not arch:
-            logger.error("ERROR: arch is not defined.")
+            logger.warning(
+                "WARNING: arch is not defined. Therefore, the synth command is not executed"
+            )
 
         plugins = []
         if has_uhdm:
             plugins.append("uhdm")
+
+        write_options = (
+            ["-pvector", "bra"] if arch == "xilinx" and output_format == "edif" else []
+        )
+        write_options += self.tool_options.get("yosys_write_options", [])
 
         template = yosys_template or "edalize_yosys_template.tcl"
         template_vars = {
@@ -114,13 +134,12 @@ class Yosys(Edatool):
             "file_table": "\n".join(file_table),
             "incdirs": " ".join(["-I" + d for d in incdirs]),
             "top": self.toplevel,
-            "synth_command": "synth_" + arch,
+            "synth_command": "synth_" + arch if arch else "",
             "synth_options": " ".join(self.tool_options.get("yosys_synth_options", "")),
             "write_command": "write_" + output_format,
             "output_format": output_format,
-            "output_opts": "-pvector bra "
-            if (arch == "xilinx" and output_format == "edif")
-            else "",
+            "output_name": output_name,
+            "output_opts": " ".join(write_options),
             "yosys_template": template,
             "name": self.name,
         }
